@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Expense Splitter & Budget Planner</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 font-sans leading-normal tracking-normal">
+    <div class="container mx-auto p-6 max-w-4xl">
+        <header class="mb-8 text-center">
+            <h1 class="text-3xl font-bold text-indigo-600">Smart Expense Splitter</h1>
+            <p class="text-gray-500">Track group costs and personal budgets seamlessly</p>
+        </header>
+
+        <!-- Form Section -->
+        <div class="bg-white p-6 rounded-lg shadow-md mb-8">
+            <h2 class="text-xl font-semibold mb-4 text-gray-700">Add New Expense</h2>
+            <form id="expenseForm" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <input type="text" id="title" placeholder="Description (e.g., Grocery)" class="p-2 border rounded" required>
+                <input type="number" step="0.01" id="amount" placeholder="Amount ($)" class="p-2 border rounded" required>
+                <input type="text" id="paidBy" placeholder="Paid By (e.g., Alex)" class="p-2 border rounded" required>
+                <select id="category" class="p-2 border rounded">
+                    <option value="Food">Food</option>
+                    <option value="Rent">Rent</option>
+                    <option value="Utilities">Utilities</option>
+                    <option value="Travel">Travel</option>
+                </select>
+                <input type="text" id="groupName" placeholder="Group / Split Name (e.g., Apartment)" class="p-2 border rounded" required>
+                <button type="submit" class="bg-indigo-600 text-white p-2 rounded hover:bg-indigo-700 col-span-full">Add Expense</button>
+            </form>
+        </div>
+
+        <!-- Expense List -->
+        <div class="bg-white p-6 rounded-lg shadow-md">
+            <h2 class="text-xl font-semibold mb-4 text-gray-700">Expense History</h2>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-gray-100 border-b">
+                            <th class="p-3">Title</th>
+                            <th class="p-3">Amount</th>
+                            <th class="p-3">Paid By</th>
+                            <th class="p-3">Category</th>
+                            <th class="p-3">Group</th>
+                            <th class="p-3">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="expenseTableBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = '/api/expenses';
+
+        async function fetchExpenses() {
+            const res = await fetch(API_URL);
+            const expenses = await res.json();
+            const tbody = document.getElementById('expenseTableBody');
+            tbody.innerHTML = '';
+            expenses.forEach(exp => {
+                tbody.innerHTML += `
+                    <tr class="border-b">
+                        <td class="p-3">${exp.title}</td>
+                        <td class="p-3">$${exp.amount.toFixed(2)}</td>
+                        <td class="p-3">${exp.paidBy}</td>
+                        <td class="p-3"><span class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">${exp.category}</span></td>
+                        <td class="p-3">${exp.groupName}</td>
+                        <td class="p-3"><button onclick="deleteExpense(${exp.id})" class="text-red-500 hover:underline">Delete</button></td>
+                    </tr>
+                `;
+            });
+        }
+
+        document.getElementById('expenseForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const expense = {
+                title: document.getElementById('title').value,
+                amount: parseFloat(document.getElementById('amount').value),
+                paidBy: document.getElementById('paidBy').value,
+                category: document.getElementById('category').value,
+                groupName: document.getElementById('groupName').value
+            };
+            await fetch(API_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(expense)
+            });
+            e.target.reset();
+            fetchExpenses();
+        });
+
+        async function deleteExpense(id) {
+            await fetch(`${API_URL}/${id}`, { method: 'DELETE' });
+            fetchExpenses();
+        }
+
+        fetchExpenses();
+    </script>
+</body>
+</html>
